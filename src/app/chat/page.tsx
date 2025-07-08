@@ -118,10 +118,8 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {" "}
-      {/* Contenedor principal de la página, toma toda la altura disponible */}
-      {/* Main Chat Area */}
-      {/* Añadido 'pb-[calc(160px+env(safe-area-inset-bottom))]' para padding al final y espacio para el input fijo en móvil */}
+ {/* Contenedor principal de la página, toma toda la altura disponible */}
+      {/* Main Chat Area - Adjusted padding-bottom to accommodate the fixed input area */}
       <main className="flex-1 overflow-y-auto p-4 pb-[160px]">
         <div className="flex flex-col gap-4">
           {/* Lógica para mostrar DateSeparator (simplificada, puedes mejorarla después) */}
@@ -149,9 +147,8 @@ export default function ChatPage() {
         </div>
       </main>
       {/* Input Area and Quick Replies - Fijo en la parte inferior de esta página */}
-      {/* Las clases 'absolute bottom-0 left-0 right-0 z-10' lo fijan al final del contenedor 'h-full' */}
-      <div className="absolute bottom-0 left-0 right-0 z-10 border-t border-[#293832] bg-[#111715] p-4 flex flex-col items-center">
-        <div className="mb-3 flex gap-2 overflow-x-auto pb-2 w-full max-w-lg">
+ <div className="sticky bottom-0 z-10 border-t border-[#293832] bg-[#111715] p-4 flex flex-col items-center">
+ <div className="mb-3 flex gap-2 overflow-x-auto pb-2 w-full max-w-lg">
           {[
             "Ver mi rutina de hoy",
             "No tengo esta máquina",
