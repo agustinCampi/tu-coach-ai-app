@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import { ChatMessage } from '@/components/chat-message';
 import { ChatInput } from '@/components/chat-input';
 import { QuickReplyButtons } from '@/components/quick-reply-buttons';
@@ -8,6 +9,7 @@ import { DateSeparator } from '@/components/date-separator';
 import { TypingIndicator } from '@/components/typing-indicator';
 import type { ChatItem, Message } from '@/lib/types';
 import { smartExerciseSuggestion } from '@/ai/flows/smart-exercise-suggestion';
+import { useAuth } from '@/context/AuthContext';
 
 const initialMessages: ChatItem[] = [
   { id: 'date-1', type: 'date', date: 'Hoy' },
@@ -20,11 +22,20 @@ const initialMessages: ChatItem[] = [
 ];
 
 export default function ChatPage() {
+  const { currentUser, loading } = useAuth();
+  const router = useRouter();
   const [messages, setMessages] = useState<ChatItem[]>(initialMessages);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!loading && !currentUser) {
+      router.push('/login');
+    }
+  }, [currentUser, loading, router]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -94,6 +105,10 @@ export default function ChatPage() {
     handleSubmit(reply);
   };
 
+  // Show loading indicator while checking auth state
+  if (loading || !currentUser) {
+    return <div>Loading...</div>; // Or a proper loading component
+  }
 
   return (
     <div className="flex flex-col h-full">
