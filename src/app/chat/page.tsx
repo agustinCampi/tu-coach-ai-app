@@ -1,141 +1,204 @@
 "use client";
 
-import { useState, useRef, useEffect, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import { ChatMessage } from '@/components/chat-message';
-import { ChatInput } from '@/components/chat-input';
-import { QuickReplyButtons } from '@/components/quick-reply-buttons';
-import { DateSeparator } from '@/components/date-separator';
-import { TypingIndicator } from '@/components/typing-indicator';
-import type { ChatItem, Message } from '@/lib/types';
-import { smartExerciseSuggestion } from '@/ai/flows/smart-exercise-suggestion';
-import { useAuth } from '@/context/AuthContext';
+import React, { useState, useEffect, useRef } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Send, Mic } from "lucide-react";
 
-const initialMessages: ChatItem[] = [
-  { id: 'date-1', type: 'date', date: 'Hoy' },
-  {
-    id: 'msg-1',
-    type: 'ai',
-    text: '¡Hola! Soy Tu Coach AI, tu entrenador personal inteligente. ¿En qué te puedo ayudar hoy?',
-    timestamp: '09:00 AM',
-  },
-];
+import ChatMessage from "@/components/chat-message";
+import DateSeparator from "@/components/date-separator";
 
 export default function ChatPage() {
   const { currentUser, loading } = useAuth();
   const router = useRouter();
-  const [messages, setMessages] = useState<ChatItem[]>(initialMessages);
-  const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [inputMessage, setInputMessage] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Redirect to login if not authenticated
+  // Redirigir si no está autenticado
   useEffect(() => {
     if (!loading && !currentUser) {
-      router.push('/login');
+      router.push("/login");
     }
   }, [currentUser, loading, router]);
 
+  // Scroll al final de los mensajes
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
-  const handleSubmit = async (value: string) => {
-    if (!value.trim()) return;
+  // Saludo inicial del AI Coach al cargar
+  useEffect(() => {
+    if (currentUser && messages.length === 0) {
+      setMessages([
+        {
+          id: Date.now(),
+          text: "¡Hola! Soy Tu Coach AI, tu entrenador personal inteligente. ¿En qué te puedo ayudar hoy?",
+          sender: "ai",
+          timestamp: new Date(),
+        },
+      ]);
+    }
+  }, [currentUser, messages.length]);
 
-    const userMessage: Message = {
-      id: `msg-${Date.now()}`,
-      type: 'user',
-      text: value,
-      timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+  const handleSendMessage = async () => {
+    if (inputMessage.trim() === "") return;
+
+    const newMessage = {
+      id: Date.now(),
+      text: inputMessage,
+      sender: "user",
+      timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
-    setIsLoading(true);
+    setMessages((prevMessages) => [...prevMessages, newMessage]);
+    setInputMessage("");
+    setIsTyping(true);
 
     try {
-      const conversationHistory = messages
-        .filter((item): item is Message => item.type === 'user' || item.type === 'ai')
-        .map(item => `${item.type}: ${item.text}`)
-        .join('\n');
-      
-      const aiResponse = await smartExerciseSuggestion({ userInput: `${conversationHistory}\nuser: ${value}` });
-      
-      let responseText = '';
-      if (aiResponse.exerciseSuggestions && aiResponse.exerciseSuggestions.length > 0) {
-        responseText += `Te sugiero estas rutinas: ${aiResponse.exerciseSuggestions.join(', ')}.`;
-      }
-      if (aiResponse.reasoning) {
-        responseText += ` ${aiResponse.reasoning}`;
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: [...messages, newMessage],
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const aiMessage: Message = {
-          id: `msg-${Date.now() + 1}`,
-          type: 'ai',
-          text: responseText || "No estoy seguro de cómo responder a eso. ¿Puedes intentar reformular tu pregunta?",
-          timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-      };
+      const data = await response.json();
 
-      setMessages((prev) => [...prev, aiMessage]);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          id: Date.now() + 1,
+          text: data.text,
+          sender: "ai",
+          timestamp: new Date(),
+        },
+      ]);
     } catch (error) {
-        console.error("Error calling AI:", error);
-        const errorMessage: Message = {
-            id: `err-${Date.now()}`,
-            type: 'ai',
-            text: "Lo siento, estoy teniendo problemas para conectarme. Por favor, inténtalo de nuevo más tarde.",
-            timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-        };
-        setMessages((prev) => [...prev, errorMessage]);
+      console.error("Error al enviar mensaje a la IA:", error);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          id: Date.now() + 1,
+          text: "Lo siento, tuve un problema al procesar tu solicitud. Por favor, intenta de nuevo.",
+          sender: "ai",
+          timestamp: new Date(),
+        },
+      ]);
     } finally {
-        setIsLoading(false);
+      setIsTyping(false);
     }
   };
 
-  const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    handleSubmit(inputValue);
-    setInputValue('');
+  const handleQuickReply = (text: string) => {
+    setInputMessage(text);
+    // handleSendMessage(); // Descomentar si quieres envío automático al hacer click en quick reply
   };
 
-  const handleQuickReply = (reply: string) => {
-    setInputValue('');
-    handleSubmit(reply);
-  };
-
-  // Show loading indicator while checking auth state
   if (loading || !currentUser) {
-    return <div>Loading...</div>; // Or a proper loading component
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#1C1C1E] text-white">
+        Cargando...
+      </div>
+    );
   }
 
   return (
     <div className="flex flex-col h-full">
-      <header className="flex-shrink-0 bg-background border-b border-border p-4">
-        <h1 className="text-xl font-semibold text-center text-white">Tu Coach AI</h1>
-      </header>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((item) =>
-          item.type === 'date' ? (
-            <DateSeparator key={item.id} date={item.date} />
-          ) : (
-            <ChatMessage key={item.id} message={item as Message} />
-          )
-        )}
-        {isLoading && <TypingIndicator />}
-        <div ref={scrollRef} />
-      </div>
-
-      <div className="flex-shrink-0 mt-auto bg-background">
-        {!isLoading && <QuickReplyButtons onQuickReply={handleQuickReply} isLoading={isLoading} />}
-        <ChatInput
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onSubmit={handleFormSubmit}
-          isLoading={isLoading}
-        />
+      {" "}
+      {/* Contenedor principal de la página, toma toda la altura disponible */}
+      {/* Main Chat Area */}
+      {/* Añadido 'pb-[calc(160px+env(safe-area-inset-bottom))]' para padding al final y espacio para el input fijo en móvil */}
+      <main className="flex-1 overflow-y-auto p-4 pb-[160px]">
+        <div className="flex flex-col gap-4">
+          {/* Lógica para mostrar DateSeparator (simplificada, puedes mejorarla después) */}
+          {messages.length > 0 && (
+            <DateSeparator date={messages[0].timestamp.toLocaleDateString()} />
+          )}
+          {messages.map((msg, index) => (
+            <React.Fragment key={msg.id}>
+              <ChatMessage message={msg} isUser={msg.sender === "user"} />
+            </React.Fragment>
+          ))}
+          {isTyping && (
+            <div className="flex items-center gap-2 pt-2">
+              <div className="size-8 shrink-0">
+                {/* Placeholder para avatar AI */}
+              </div>
+              <div className="typing-indicator flex items-center gap-1.5 rounded-lg bg-[#293832] px-3 py-2">
+                <span className="size-1.5 rounded-full bg-green-400"></span>
+                <span className="size-1.5 rounded-full bg-green-400"></span>
+                <span className="size-1.5 rounded-full bg-green-400"></span>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} /> {/* Elemento para scroll */}
+        </div>
+      </main>
+      {/* Input Area and Quick Replies - Fijo en la parte inferior de esta página */}
+      {/* Las clases 'absolute bottom-0 left-0 right-0 z-10' lo fijan al final del contenedor 'h-full' */}
+      <div className="absolute bottom-0 left-0 right-0 z-10 border-t border-[#293832] bg-[#111715] p-4 flex flex-col items-center">
+        <div className="mb-3 flex gap-2 overflow-x-auto pb-2 w-full max-w-lg">
+          {[
+            "Ver mi rutina de hoy",
+            "No tengo esta máquina",
+            "Tengo poca energía",
+            "Tengo una pregunta",
+            "Día de descanso",
+          ].map((text) => (
+            <Button
+              key={text}
+              className="shrink-0 rounded-full bg-[#293832] px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-green-400 hover:text-[#111715]"
+              onClick={() => handleQuickReply(text)}
+              disabled={isTyping}
+            >
+              {text}
+            </Button>
+          ))}
+        </div>
+        <div className="relative w-full max-w-lg">
+          <Input
+            className="w-full rounded-full border-none bg-[#293832] py-3 pl-4 pr-24 text-sm text-white placeholder:text-[#9eb7ae] focus:outline-none focus:ring-2 focus:ring-green-400"
+            placeholder="Envía un mensaje a Tu Coach AI..."
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === "Enter") handleSendMessage();
+            }}
+            disabled={isTyping}
+          />
+          <div className="absolute bottom-0 right-0 top-0 flex items-center pr-2">
+            <Button
+              className="flex size-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"
+              variant="ghost"
+              size="icon"
+              disabled={isTyping}
+            >
+              <Mic className="h-5 w-5" />
+            </Button>
+            <Button
+              className="flex size-8 items-center justify-center rounded-full bg-green-400 text-black hover:bg-green-400/90"
+              size="icon"
+              onClick={handleSendMessage}
+              disabled={isTyping}
+            >
+              <Send className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

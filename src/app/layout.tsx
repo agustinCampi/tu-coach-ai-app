@@ -1,5 +1,6 @@
 import "./globals.css";
-import AuthProvider from "@/context/AuthContext"; // Importación por defecto
+import AuthProvider from "@/context/AuthContext";
+import BottomNavBar from "@/components/bottom-nav-bar"; // Importación por defecto
 
 export default function RootLayout({
   children,
@@ -9,7 +10,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-body antialiased bg-background text-foreground">
-        <AuthProvider>{children}</AuthProvider> {/* Usa AuthProvider aquí */}
+        <AuthProvider>
+          {children}{" "}
+          {/* Este 'children' serán las páginas o los layouts anidados */}
+        </AuthProvider>
+        <BottomNavBar />{" "}
+        {/* <-- ¡La barra de navegación GLOBAL, una sola vez aquí! */}
       </body>
     </html>
   );

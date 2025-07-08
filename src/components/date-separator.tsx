@@ -1,13 +1,13 @@
+import React from "react";
+
 interface DateSeparatorProps {
   date: string;
 }
 
-export function DateSeparator({ date }: DateSeparatorProps) {
+export default function DateSeparator({ date }: DateSeparatorProps) {
   return (
-    <div className="flex items-center my-4">
-      <div className="flex-grow border-t border-border"></div>
-      <span className="flex-shrink mx-4 text-xs text-muted-foreground">{date}</span>
-      <div className="flex-grow border-t border-border"></div>
+    <div className="my-4 flex items-center justify-center">
+      <span className="text-xs font-medium text-[#9eb7ae]">{date}</span>
     </div>
   );
 }

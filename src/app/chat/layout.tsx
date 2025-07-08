@@ -1,4 +1,7 @@
-import { BottomNavBar } from '@/components/bottom-nav-bar';
+"use client";
+
+import React from "react";
+import { Dumbbell } from "lucide-react";
 
 export default function ChatLayout({
   children,
@@ -6,11 +9,19 @@ export default function ChatLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col h-screen bg-background">
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {children}
-      </div>
-      <BottomNavBar />
+    <div className="flex flex-col h-screen bg-[#111715] text-white relative">
+      {" "}
+      {/* <--- CAMBIADO: Añadido 'relative' aquí */}
+      {/* Header específico de la página de chat */}
+      <header className="flex items-center justify-between border-b border-solid border-b-[#293832] px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="size-8 rounded-full bg-green-400 p-1.5 text-black">
+            <Dumbbell className="h-full w-full" />
+          </div>
+          <h2 className="text-xl font-bold tracking-tight">Tu Coach AI</h2>
+        </div>
+      </header>
+      <div className="flex-1 flex flex-col overflow-hidden">{children}</div>
     </div>
   );
 }

@@ -1,23 +1,11 @@
-import type {NextConfig} from 'next';
-
-const nextConfig: NextConfig = {
-  /* config options here */
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'placehold.co',
-        port: '',
-        pathname: '/**',
-      },
+    domains: [
+      "cdn-icons-png.flaticon.com", // Para el avatar del AI Coach
+      "www.gravatar.com", // Para el avatar del usuario
     ],
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
