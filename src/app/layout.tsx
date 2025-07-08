@@ -1,6 +1,6 @@
-import './globals.css';
-import AuthProvider from '@/context/AuthContext';
-import BottomNavBar from '@/components/bottom-nav-bar';
+import "./globals.css";
+import AuthProvider from "@/context/AuthContext";
+import BottomNavBar from "@/components/bottom-nav-bar"; // Importación por defecto
 
 export default function RootLayout({
   children,
@@ -8,14 +8,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full"> {/* <--- CAMBIADO: Añadido 'h-full' a html */}
-      <body className="font-body antialiased bg-background text-foreground flex flex-col h-full"> {/* <--- CAMBIADO: Añadido 'flex flex-col h-full' a body */}
+    <html lang="en" className="h-full">
+      <body>
+        {" "}
+        {/* Eliminado el espacio en blanco y añadido flex flex-col h-full */}
         <AuthProvider>
-          {children}
+          {children}{" "}
+          {/* Este 'children' serán las páginas o los layouts anidados */}
         </AuthProvider>
-        {/* BottomNavBar ya está 'fixed bottom-0' en su propio componente, no necesita estarlo por el padre aquí */}
-        {/* Si BottomNavBar ya está en el layout del chat, NO lo pongas aquí */}
-        <BottomNavBar />
+        <BottomNavBar />{" "}
+        {/* <-- La barra de navegación GLOBAL, una sola vez aquí! */}
       </body>
     </html>
   );
