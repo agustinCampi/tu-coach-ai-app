@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Dumbbell } from "lucide-react";
+import React from 'react';
+import { Dumbbell } from 'lucide-react';
 
 export default function ChatLayout({
   children,
@@ -9,9 +9,7 @@ export default function ChatLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col h-screen bg-[#111715] text-white relative">
-      {" "}
-      {/* <--- CAMBIADO: Añadido 'relative' aquí */}
+    <div className="flex flex-col h-full bg-[#111715] text-white"> {/* <--- CAMBIADO: h-full y flex-col */}
       {/* Header específico de la página de chat */}
       <header className="flex items-center justify-between border-b border-solid border-b-[#293832] px-4 py-3">
         <div className="flex items-center gap-3">
@@ -21,7 +19,10 @@ export default function ChatLayout({
           <h2 className="text-xl font-bold tracking-tight">Tu Coach AI</h2>
         </div>
       </header>
-      <div className="flex-1 flex flex-col overflow-hidden">{children}</div>
+
+      <div className="flex-1 flex flex-col"> {/* <--- CAMBIADO: flex-1 flex flex-col */}
+        {children} {/* Aquí se renderizará src/app/chat/page.tsx */}
+      </div>
     </div>
   );
 }

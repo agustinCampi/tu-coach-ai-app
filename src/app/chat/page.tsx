@@ -118,7 +118,7 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-full">
- {/* Contenedor principal de la página, toma toda la altura disponible */}
+      {/* Contenedor principal de la página, toma toda la altura disponible */}
       {/* Main Chat Area - Adjusted padding-bottom to accommodate the fixed input area */}
       <main className="flex-1 overflow-y-auto p-4 pb-[160px]">
         <div className="flex flex-col gap-4">
@@ -147,8 +147,8 @@ export default function ChatPage() {
         </div>
       </main>
       {/* Input Area and Quick Replies - Fijo en la parte inferior de esta página */}
- <div className="sticky bottom-0 z-10 border-t border-[#293832] bg-[#111715] p-4 flex flex-col items-center">
- <div className="mb-3 flex gap-2 overflow-x-auto pb-2 w-full max-w-lg">
+      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-[#293832] bg-[#111715] p-4 flex flex-col items-center">
+        <div className="mb-3 flex gap-2 overflow-x-auto pb-2 w-full max-w-lg">
           {[
             "Ver mi rutina de hoy",
             "No tengo esta máquina",
