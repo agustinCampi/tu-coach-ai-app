@@ -117,7 +117,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-screen">
       {/* Contenedor principal de la página, toma toda la altura disponible */}
       {/* Main Chat Area - Adjusted padding-bottom to accommodate the fixed input area */}
       <main className="flex-1 overflow-y-auto p-4 pb-[160px]">
