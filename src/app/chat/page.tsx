@@ -1,42 +1,45 @@
-"use client"; // Necesario para usar hooks de React
+"use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+// useRouter ya no es necesario aquí si la redirección se maneja en AuthContext
+import { useAuth } from "@/context/AuthContext"; // Importa useAuth
 
 import ChatMessage from "@/components/chat-message";
-// Importar componentes de UI si se usan directamente (asegúrate de tenerlos o usa elementos HTML simples)
-// import { Input } from "@/components/ui/input"; // Si tienes un componente Input de shadcn/ui o similar
-// import { Button } from "@/components/ui/button"; // Si tienes un componente Button de shadcn/ui o similar
+import DateSeparator from "@/components/date-separator";
+import { Input } from "@/components/ui/input"; // Asegúrate de importar Input si no lo haces en otro lugar
+import { Button } from "@/components/ui/button"; // Asegúrate de importar Button
+import { Send, Mic } from "lucide-react"; // Iconos
 
 export default function ChatPage() {
-  // Autenticación y redirección
-  const { currentUser, loading } = useAuth();
-  const router = useRouter();
+  const { currentUser, loading } = useAuth(); // Obtén currentUser y loading del contexto
+  // const router = useRouter(); // Ya no se necesita aquí
+
   const [messages, setMessages] = useState<any[]>([]);
-  const [inputMessage, setInputMessage] = useState(""); // Mantenemos el estado aquí
-  const [isTyping, setIsTyping] = useState(false); // Mantenemos el estado aquí
+  const [inputMessage, setInputMessage] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Redirigir si no está autenticado
-  useEffect(() => {
-    if (!loading && !currentUser) {
-      router.push("/login");
-    }
-  }, [currentUser, loading, router]);
+  // Redirigir si no está autenticado (AHORA MANEJADO EN AUTHCONTEXT.JS)
+  // useEffect(() => {
+  //   if (!loading && !currentUser) {
+  //     router.replace('/login');
+  //   }
+  // }, [currentUser, loading, router]);
 
   // Scroll al final de los mensajes
   useEffect(() => {
     if (messagesEndRef.current) {
-      // Usar setTimeout para asegurar que el DOM se ha actualizado después de añadir mensajes
-      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 0);
+      setTimeout(
+        () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }),
+        0
+      );
     }
   }, [messages]);
 
-  // Saludo inicial del AI Coach al cargar
+  // Saludo inicial del AI Coach al cargar (solo si el usuario está autenticado y es la primera carga)
   useEffect(() => {
-    if (currentUser && messages.length === 0) {
+    if (currentUser && messages.length === 0 && !loading) {
       setMessages([
         {
           id: Date.now(),
@@ -46,11 +49,9 @@ export default function ChatPage() {
         },
       ]);
     }
-  }, [currentUser, messages.length]);
+  }, [currentUser, messages.length, loading]);
 
-  // Lógica para enviar mensajes a la API
   const handleSendMessage = async (messageText: string) => {
-    // Recibe el texto como argumento
     if (messageText.trim() === "") return;
 
     const newMessage = {
@@ -61,7 +62,7 @@ export default function ChatPage() {
     };
 
     setMessages((prevMessages) => [...prevMessages, newMessage]);
-    setInputMessage(""); // Limpiar input después de enviar
+    setInputMessage("");
     setIsTyping(true);
 
     try {
@@ -106,36 +107,29 @@ export default function ChatPage() {
     }
   };
 
-  // Lógica para manejar las respuestas rápidas (ahora integradas en esta página)
   const handleQuickReply = (text: string) => {
-    handleSendMessage(text); // Envía el mensaje de respuesta rápida directamente
+    handleSendMessage(text);
   };
 
-  // Renderizar estado de carga o redirección
-  if (loading || !currentUser) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#1C1C1E] text-white">
-        Cargando...
-      </div>
-    );
-  } // Si no está cargando y hay usuario, renderiza la UI del chat
-
+  // El estado de carga global se maneja en AuthContext.js
+  // Este componente solo se renderiza si el usuario está autenticado.
   return (
-    // Contenedor principal que ocupa toda la altura disponible (excepto barra de navegación)
-    // Assuming the root layout handles the overall h-screen and padding for top/bottom bars (if any)
-    // This div will be flex column to manage content area and fixed input area
     <div className="flex flex-col h-full">
-      {/* Área de mensajes - flex-1 para ocupar espacio, overflow para scroll */}
-      <main className="flex-1 overflow-y-auto p-4 pb-28"> {/* Añadir padding-bottom */}
+      {" "}
+      {/* Este div toma el 100% de la altura del ChatLayout */}
+      <main className="flex-1 overflow-y-auto p-4 pb-[170px]">
         <div className="flex flex-col gap-4">
+          {messages.length > 0 && (
+            <DateSeparator date={messages[0].timestamp.toLocaleDateString()} />
+          )}
           {messages.map((msg, index) => (
-            <ChatMessage key={msg.id} message={msg} isUser={msg.sender === "user"} />
+            <React.Fragment key={msg.id}>
+              <ChatMessage message={msg} isUser={msg.sender === "user"} />
+            </React.Fragment>
           ))}
           {isTyping && (
             <div className="flex items-center gap-2 pt-2">
-              <div className="size-8 shrink-0">
-                {/* Placeholder para avatar AI o usa un componente de avatar */}
-              </div>
+              <div className="size-8 shrink-0"></div>
               <div className="typing-indicator flex items-center gap-1.5 rounded-lg bg-[#293832] px-3 py-2">
                 <span className="size-1.5 rounded-full bg-green-400"></span>
                 <span className="size-1.5 rounded-full bg-green-400"></span>
@@ -143,65 +137,56 @@ export default function ChatPage() {
               </div>
             </div>
           )}
-          {/* Elemento para scroll hasta el final */}
           <div ref={messagesEndRef} />
         </div>
       </main>
-
-      {/* Área de Input y Botones - Fija en la parte inferior */}
-      <div className="fixed inset-x-0 bottom-[64px] z-50 border-t border-[#293832] bg-[#111715] p-4"> {/* Ajusta bottom según la altura de tu nav bar y z-index para estar por encima */}
-        {/* Quick Reply Buttons (si los quieres de vuelta, este es el lugar) */}
-        {/*
-        <div className="flex flex-wrap gap-2 mb-4">
-           {quickReplies.map((reply, index) => (
-            <button
-              key={index}
-              onClick={() => handleQuickReply(reply)}
-              className="px-4 py-2 text-sm font-medium rounded-full bg-[#293832] text-[#1fdf95] hover:bg-[#3a4c45] transition-colors"
+      <div className="fixed inset-x-0 bottom-[64px] z-20 border-t border-[#293832] bg-[#111715] p-4 flex flex-col items-center">
+        <div className="mb-3 flex gap-2 overflow-x-auto pb-2 w-full max-w-lg">
+          {/* Botones de respuesta rápida (si los quieres de vuelta, este es el lugar) */}
+          {/*
+          {['Ver mi rutina de hoy', 'No tengo esta máquina', 'Tengo poca energía', 'Tengo una pregunta', 'Día de descanso'].map((text) => (
+            <Button
+              key={text}
+              className="shrink-0 rounded-full bg-[#293832] px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-green-400 hover:text-[#111715]"
+              onClick={() => handleQuickReply(text)}
+              disabled={isTyping}
             >
-              {reply}
-            </button>
+              {text}
+            </Button>
           ))}
+          */}
         </div>
-        */}
-
-        {/* Input Area */}
-        <div className="relative flex items-center">
-          <input
-            className="flex-1 rounded-full border-none bg-[#293832] py-3 pl-4 pr-24 text-sm text-white placeholder:text-[#9eb7ae] focus:outline-none focus:ring-2 focus:ring-green-400"
+        <div className="relative w-full max-w-lg">
+          <Input
+            className="w-full rounded-full border-none bg-[#293832] py-3 pl-4 pr-12 text-sm text-white placeholder:text-[#9eb7ae] focus:outline-none focus:ring-2 focus:ring-green-400"
             placeholder="Envía un mensaje a Tu Coach AI..."
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                handleSendMessage(inputMessage);
-              }
+              if (e.key === "Enter") handleSendMessage(inputMessage);
             }}
+            disabled={isTyping}
           />
-          <div className="absolute right-0 flex items-center pr-2">
-            {/* Botón Micrófono */}
-            <button className="flex size-8 items-center justify-center rounded-full text-gray-400 hover:bg-[#293832] hover:text-white">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-                <path d="M12 19v4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-              </svg>
-            </button>
-            {/* Botón Enviar */}
-            <button
-              onClick={() => handleSendMessage(inputMessage)}
-              className="flex size-8 items-center justify-center rounded-full bg-green-400 text-black ml-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={!inputMessage.trim()}
+          <div className="absolute bottom-0 right-0 top-0 flex items-center pr-2">
+            <Button
+              className="flex size-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"
+              variant="ghost"
+              size="icon"
+              disabled={isTyping}
             >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M22 2L11 13" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-                <path d="M22 2L15 22L11 13L2 9L22 2z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-              </svg>
-            </button>
+              <Mic className="h-5 w-5" />
+            </Button>
+            <Button
+              className="flex size-8 items-center justify-center rounded-full bg-green-400 text-black hover:bg-green-400/90"
+              size="icon"
+              onClick={() => handleSendMessage(inputMessage)}
+              disabled={isTyping}
+            >
+              <Send className="h-5 w-5" />
+            </Button>
           </div>
         </div>
       </div>
     </div>
   );
 }
-

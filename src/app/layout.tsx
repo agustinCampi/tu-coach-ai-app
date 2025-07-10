@@ -1,6 +1,7 @@
+// src/app/layout.tsx
 import "./globals.css";
 import AuthProvider from "@/context/AuthContext";
-import BottomNavBar from "@/components/bottom-nav-bar"; // Importación por defecto
+import BottomNavBar from "@/components/bottom-nav-bar";
 
 export default function RootLayout({
   children,
@@ -9,15 +10,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full">
-      <body>
-        {" "}
-        {/* Eliminado el espacio en blanco y añadido flex flex-col h-full */}
+      <body className="flex flex-col min-h-screen bg-[#111715] text-white">
         <AuthProvider>
-          {children}{" "}
-          {/* Este 'children' serán las páginas o los layouts anidados */}
+          {/* El children (el contenido de la página actual) debe ocupar el espacio restante */}
+          <div className="flex-1 flex flex-col overflow-auto">{children}</div>
+          <BottomNavBar />{" "}
+          {/* <--- ¡MOVIDO AQUÍ! Ahora está dentro del AuthProvider */}
         </AuthProvider>
-        <BottomNavBar />{" "}
-        {/* <-- La barra de navegación GLOBAL, una sola vez aquí! */}
       </body>
     </html>
   );

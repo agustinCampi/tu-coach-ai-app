@@ -1,46 +1,100 @@
 "use client";
 
+import Cookies from "js-cookie";
 import { createContext, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged, signOut } from "firebase/auth"; // Asegúrate de importar signOut aquí
-import { app, auth } from "@/lib/firebase"; // Importa 'app' y 'auth' desde tu archivo firebase.js
+import { useRouter, usePathname } from "next/navigation"; // Importa useRouter y usePathname
 import {
+  getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-} from "firebase/auth"; // Importa estas funciones
+  signOut,
+  onAuthStateChanged,
+} from "firebase/auth";
+import { app, auth } from "@/lib/firebase";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === null) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
 
 export default function AuthProvider({ children }) {
-  // Exportación por defecto
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter(); // Inicializa useRouter
+  const pathname = usePathname(); // Obtiene la ruta actual
 
-  // No inicialices 'auth' aquí de nuevo; ya lo importaste desde '@/lib/firebase'
-  // Puedes usar directamente la instancia 'auth' importada.
+  // Rutas que son explícitamente públicas (accesibles sin autenticación)
+  const publicRoutes = ["/login", "/register"];
+  // Rutas protegidas que solo los autenticados pueden ver
+  const protectedRoutes = ["/chat", "/rutina", "/perfil"];
 
   const signUpWithEmailAndPassword = (email, password) => {
-    return createUserWithEmailAndPassword(auth, email, password); // Usa 'auth' importado
+    return createUserWithEmailAndPassword(auth, email, password).then(
+      (userCredential) => {
+        Cookies.set("firebaseAuthToken", userCredential.user.uid, {
+          expires: 7,
+          secure: process.env.NODE_ENV === "production",
+        });
+        return userCredential;
+      }
+    );
   };
 
   const signInWithEmailAndPassword = (email, password) => {
-    return signInWithEmailAndPassword(auth, email, password); // Usa 'auth' importado
+    return signInWithEmailAndPassword(auth, email, password).then(
+      (userCredential) => {
+        Cookies.set("firebaseAuthToken", userCredential.user.uid, {
+          expires: 7,
+          secure: process.env.NODE_ENV === "production",
+        });
+        return userCredential;
+      }
+    );
   };
 
   const signOutUser = () => {
-    return signOut(auth); // Usa 'auth' importado
+    return signOut(auth).then(() => {
+      Cookies.remove("firebaseAuthToken");
+    });
   };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      // Usa 'auth' importado
       setCurrentUser(user);
       setLoading(false);
+      if (!user) {
+        Cookies.remove("firebaseAuthToken");
+      }
     });
 
-    return unsubscribe;
-  }, [auth]); // Asegúrate que 'auth' sea una dependencia estable, la importación lo es
+    return () => unsubscribe();
+  }, [auth]);
+
+  // Lógica de redirección centralizada
+  useEffect(() => {
+    // Si aún está cargando el estado de autenticación, no redirigir
+    if (loading) return;
+
+    const isPublicRoute = publicRoutes.includes(pathname);
+    const isProtectedRoute = protectedRoutes.includes(pathname);
+
+    // Caso 1: Usuario NO autenticado y en una ruta protegida
+    if (!currentUser && isProtectedRoute) {
+      router.replace("/login"); // Redirige a login
+      return;
+    }
+
+    // Caso 2: Usuario SÍ autenticado y en una ruta pública (login/register)
+    if (currentUser && isPublicRoute) {
+      router.replace("/chat"); // Redirige al chat
+      return;
+    }
+  }, [currentUser, loading, pathname, router]); // Dependencias del useEffect
 
   const value = {
     currentUser,
@@ -52,7 +106,14 @@ export default function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {/* Muestra un cargando global mientras se determina el estado de autenticación */}
+      {loading ? (
+        <div className="flex items-center justify-center min-h-screen bg-[#1C1C1E] text-white">
+          Cargando autenticación...
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 }
